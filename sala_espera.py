@@ -12,9 +12,11 @@ import redis
 PRIORIDAD_ABSOLUTA = float('inf')
 PREFIJO_SALA = 'envivo:sala'
 
+
 def clave(evento_id) -> str:
     """Clave de Redis. Formato: envivo:sala:<evento>"""
     return f"{PREFIJO_SALA}:{evento_id}"
+
 
 def entrar(r: redis.Redis, evento_id, usuario_id, prioridad: float) -> bool:
     """Registra al usuario en la sala con esa prioridad.
@@ -25,6 +27,7 @@ def entrar(r: redis.Redis, evento_id, usuario_id, prioridad: float) -> bool:
     # zadd(), devolver miembros agregados
     # 0 = False, 1 = True
     return bool(r.zadd(clave(evento_id), {usuario_id:prioridad}))
+
 
 def atender_siguiente(r: redis.Redis, evento_id, timeout: int = 0):
     """Toma y elimina la petición de mayor prioridad.
@@ -42,9 +45,11 @@ def atender_siguiente(r: redis.Redis, evento_id, timeout: int = 0):
 
     return (usuario_id, prioridad)
 
+
 def en_espera(r: redis.Redis, evento_id) -> int:
     """Cuántos usuarios hay en la sala."""
     return r.zcard(clave(evento_id))
+
 
 def posicion(r: redis.Redis, evento_id, usuario_id) -> int | None:
     """Puesto en la cola **empezando en 1**, o None si el usuario no está.

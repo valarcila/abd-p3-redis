@@ -11,9 +11,11 @@ import redis
 SEGUNDOS_POR_DEFECTO = 300
 PREFIJO_ASIENTO = 'envivo:asiento'
 
+
 def clave(evento_id, asiento) -> str:
     """Clave de Redis. Formato: envivo:asiento:<evento>:<asiento>"""
     return f"{PREFIJO_ASIENTO}:{evento_id}:{asiento}"
+
 
 def reservar(r: redis.Redis, evento_id, asiento, usuario_id,
              segundos: int = SEGUNDOS_POR_DEFECTO) -> bool:
@@ -25,15 +27,18 @@ def reservar(r: redis.Redis, evento_id, asiento, usuario_id,
     # nx solo guarda si no existe
     return bool(r.set(clave(evento_id, asiento), usuario_id, ex = segundos, nx = True))
 
+
 def propietario(r: redis.Redis, evento_id, asiento) -> str | None:
     """Quién tiene reservado el asiento, o None si está libre."""
     # get() puede devolver None
     return r.get(clave(evento_id, asiento))
 
+
 def segundos_restantes(r: redis.Redis, evento_id, asiento) -> int:
     """Segundos que quedan. -1 si la reserva es firme, -2 si no hay reserva."""
     # ttl() puede devolver -1 y -2
     return r.ttl(clave(evento_id, asiento))
+
 
 def liberar(r: redis.Redis, evento_id, asiento, usuario_id) -> bool:
     """Libera la reserva, **solo si es de ese usuario**.
@@ -54,6 +59,7 @@ def liberar(r: redis.Redis, evento_id, asiento, usuario_id) -> bool:
     """
 
     return bool(r.eval(script, 1, clave(evento_id, asiento), usuario_id))
+
 
 def confirmar(r: redis.Redis, evento_id, asiento, usuario_id) -> bool:
     """Convierte la reserva en firme: deja de caducar.
