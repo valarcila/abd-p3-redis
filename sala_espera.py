@@ -9,15 +9,12 @@ Las firmas y los valores de retorno **no deben cambiarse**.
 
 import redis
 
-# TODO: mayor que cualquier prioridad presente o futura.
-PRIORIDAD_ABSOLUTA = None
-
+PRIORIDAD_ABSOLUTA = float('inf')
+PREFIJO_SALA = 'envivo:sala:'
 
 def clave(evento_id) -> str:
     """Clave de Redis. Formato: envivo:sala:<evento>"""
-    # TODO
-    raise NotImplementedError
-
+    return f"{PREFIJO_SALA}{evento_id}"
 
 def entrar(r: redis.Redis, evento_id, usuario_id, prioridad: float) -> bool:
     """Registra al usuario en la sala con esa prioridad.
@@ -25,9 +22,9 @@ def entrar(r: redis.Redis, evento_id, usuario_id, prioridad: float) -> bool:
     Devuelve True si es nuevo en la cola y False si ya estaba (en ese caso se
     le actualiza la prioridad). Un usuario **no puede ocupar dos puestos**.
     """
-    # TODO
-    raise NotImplementedError
-
+    # zadd(), devolver miembros agregados
+    # 0 = False, 1 = True
+    return bool(r.zadd(clave(evento_id), {usuario_id:prioridad}))
 
 def atender_siguiente(r: redis.Redis, evento_id, timeout: int = 0):
     """Toma y elimina la petición de mayor prioridad.
@@ -36,20 +33,27 @@ def atender_siguiente(r: redis.Redis, evento_id, timeout: int = 0):
     Con `timeout=0` espera indefinidamente. Obtener y eliminar deben ser una
     sola operación, o dos operadores podrían atender al mismo usuario.
     """
-    # TODO
-    raise NotImplementedError
+    # bzpopmax(), devolver tupla con clave, usuario y prioridad
+    peticion = r.bzpopmax(clave(evento_id), timeout = timeout)
 
+    if peticion is None: return None
+
+    clave_cola, usuario_id, prioridad = peticion
+
+    return (usuario_id, prioridad)
 
 def en_espera(r: redis.Redis, evento_id) -> int:
     """Cuántos usuarios hay en la sala."""
-    # TODO
-    raise NotImplementedError
-
+    return r.zcard(clave(evento_id))
 
 def posicion(r: redis.Redis, evento_id, usuario_id) -> int | None:
     """Puesto en la cola **empezando en 1**, o None si el usuario no está.
 
     El puesto 1 es el que se va a atender antes.
     """
-    # TODO
-    raise NotImplementedError
+    # zrevrank(), consultar puesto de mayor a menor prioridad
+    puesto = r.zrevrank(clave(evento_id), usuario_id)
+
+    if puesto is None: return None
+
+    return 1 + puesto
