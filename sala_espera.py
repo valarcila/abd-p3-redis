@@ -10,11 +10,11 @@ Las firmas y los valores de retorno **no deben cambiarse**.
 import redis
 
 PRIORIDAD_ABSOLUTA = float('inf')
-PREFIJO_SALA = 'envivo:sala:'
+PREFIJO_SALA = 'envivo:sala'
 
 def clave(evento_id) -> str:
     """Clave de Redis. Formato: envivo:sala:<evento>"""
-    return f"{PREFIJO_SALA}{evento_id}"
+    return f"{PREFIJO_SALA}:{evento_id}"
 
 def entrar(r: redis.Redis, evento_id, usuario_id, prioridad: float) -> bool:
     """Registra al usuario en la sala con esa prioridad.
