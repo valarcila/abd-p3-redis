@@ -13,6 +13,9 @@ from pymongo.server_api import ServerApi
 from bson.objectid import ObjectId
 import yaml
 
+"""Pactica 3"""
+import redis
+from cache import CacheDocumentos
 
 def getLocationPoint(address: str) -> Point:
     """ 
@@ -104,7 +107,13 @@ class Model:
     _admissible_vars: set[str]
     _location_var: str | None = None
     _db: pymongo.collection.Collection
-    _internal_vars: set[str] = frozenset(('_modified_vars', '_required_vars', '_admissible_vars', '_db', '_data', '_location_var'))
+
+    """Practica 3"""
+    _cache: CacheDocumentos | None = None
+
+    _internal_vars: set[str] = frozenset(('_modified_vars', '_required_vars', '_admissible_vars', '_db', '_data', '_location_var', 
+        """Practica 3"""
+        '_cache'))
 
     def __init__(self, **kwargs: dict[str, str | dict | list]) -> None:
         """
@@ -229,6 +238,13 @@ class Model:
                 {"$set": modified_data}
             )
 
+            """Practica 3"""
+            if self._cache is not None:
+                self._cache.invalidar(
+                self._db.name,
+                self._data["_id"]
+            )
+
         # documento nuevo
         else:
             result = self._db.insert_one(self._data)
@@ -236,6 +252,14 @@ class Model:
             # guardar id generado por mongodb
             self._data["_id"] = result.inserted_id
 
+            """Practica 3"""
+            if self._cache is not None:
+                self._cache.set(
+                    self._db.name,
+                    self._data["_id"],
+                    self._data
+            )
+                
         self._modified_vars.clear()
 
     def delete(self) -> None:
@@ -251,6 +275,13 @@ class Model:
         self._db.delete_one(
             {"_id": self._data["_id"]}
         )
+
+        """Practica 3"""
+        if self._cache is not None:
+            self._cache.invalidar(
+                self._db.name,
+                self._data["_id"]
+            )
 
     @classmethod
     def find(cls, filter: dict[str, str | dict]) -> Any:
@@ -313,10 +344,31 @@ class Model:
                 Modelo del documento encontrado o None si no se encuentra
         """ 
         #TODO
-        pass
+        documento_id = ObjectId(id)
+        coleccion = cls._db.name
+
+        # Comprobar si al cache está activa
+        if cls._cache is not None:
+            documento = cls._cache.get(coleccion, documento_id)
+
+            if documento is not None:
+                return cls(**documento)
+
+        # Si no está cacheado, consultar MongoDB
+        documento = cls._db.find_one({"_id": documento_id})
+
+        # Si MongoDB tampoco lo encuentra
+        if documento is None:
+            return None
+
+        if cls._cache is not None:
+            cls._cache.set(coleccion, documento_id, documento)
+
+        return cls(**documento)
 
     @classmethod
-    def init_class(cls, db_collection: pymongo.collection.Collection, indexes:dict[str,str], required_vars: set[str], admissible_vars: set[str]) -> None:
+    def init_class(cls, db_collection: pymongo.collection.Collection, indexes:dict[str,str], required_vars: set[str], admissible_vars: set[str], cache: CacheDocumentos | None = None) -> None:
+    
         """ 
         Inicializa los atributos de clase en la inicializacion del sistema.
         Aqui se deben inicializar o asegurar los indices. Tambien se puede
@@ -337,6 +389,9 @@ class Model:
         cls._db = db_collection
         cls._required_vars = required_vars
         cls._admissible_vars = admissible_vars
+
+        """Practica 3"""
+        cls._cache = cache
 
         # Recorrer indexes y crear cada índice segun su tipo: 'unique', 'asc'
         # y 'geosphere'. Comparar el tipo por igualdad, no con el operador 'in'.
@@ -426,7 +481,7 @@ class ModelCursor:
                 break
 
 
-def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://localhost:27017/", db_name="abd", scope=globals()) -> None:
+def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://localhost:27017/", db_name="abd", scope=globals(), redis_uri: str | None = None) -> None:
     """ 
     Declara las clases que heredan de Model para cada uno de los 
     modelos de las colecciones definidas en definitions_path.
@@ -448,6 +503,15 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
 
     client = MongoClient(mongodb_uri, server_api = ServerApi('1'))
     db = client[db_name]
+
+
+    """Practica 3"""
+    cache = None
+
+    if redis_uri is not None:
+        cliente_redis = redis.Redis.from_url(redis_uri)
+        cache = CacheDocumentos(cliente_redis)
+        cache.configurar_limite()
 
     # Declarar tantas clases modelo colecciones existan en la base de datos
     # Leer el fichero de definiciones de modelos para obtener las colecciones,
