@@ -13,7 +13,7 @@ from pymongo.server_api import ServerApi
 from bson.objectid import ObjectId
 import yaml
 
-"""Pactica 3"""
+"""practica 3"""
 import redis
 from cache import CacheDocumentos
 
@@ -108,12 +108,18 @@ class Model:
     _location_var: str | None = None
     _db: pymongo.collection.Collection
 
-    """Practica 3"""
+    """practica 3"""
     _cache: CacheDocumentos | None = None
 
-    _internal_vars: set[str] = frozenset(('_modified_vars', '_required_vars', '_admissible_vars', '_db', '_data', '_location_var', 
-        """Practica 3"""
-        '_cache'))
+    _internal_vars: set[str] = frozenset(
+        ('_modified_vars', 
+         '_required_vars', 
+         '_admissible_vars', 
+         '_db', 
+         '_data', 
+         '_location_var', 
+         '_cache')
+    )
 
     def __init__(self, **kwargs: dict[str, str | dict | list]) -> None:
         """
@@ -238,12 +244,12 @@ class Model:
                 {"$set": modified_data}
             )
 
-            """Practica 3"""
+            """practica 3"""
             if self._cache is not None:
                 self._cache.invalidar(
-                self._db.name,
-                self._data["_id"]
-            )
+                    self._db.name,
+                    self._data["_id"]
+                )
 
         # documento nuevo
         else:
@@ -252,13 +258,13 @@ class Model:
             # guardar id generado por mongodb
             self._data["_id"] = result.inserted_id
 
-            """Practica 3"""
+            """practica 3"""
             if self._cache is not None:
                 self._cache.set(
                     self._db.name,
                     self._data["_id"],
                     self._data
-            )
+                )
                 
         self._modified_vars.clear()
 
@@ -276,7 +282,7 @@ class Model:
             {"_id": self._data["_id"]}
         )
 
-        """Practica 3"""
+        """practica 3"""
         if self._cache is not None:
             self._cache.invalidar(
                 self._db.name,
@@ -390,7 +396,7 @@ class Model:
         cls._required_vars = required_vars
         cls._admissible_vars = admissible_vars
 
-        """Practica 3"""
+        """practica 3"""
         cls._cache = cache
 
         # Recorrer indexes y crear cada índice segun su tipo: 'unique', 'asc'
@@ -505,7 +511,7 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
     db = client[db_name]
 
 
-    """Practica 3"""
+    """practica 3"""
     cache = None
 
     if redis_uri is not None:
@@ -556,7 +562,11 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
         scope[model_name] = type(model_name, (Model,),{})
 
         scope[model_name].init_class(
-            db_collection = db[model_name], indexes = indexes, required_vars = required_vars, admissible_vars = admissible_vars
+            db_collection = db[model_name], 
+            indexes = indexes, 
+            required_vars = required_vars, 
+            admissible_vars = admissible_vars,
+            cache = cache
         )
 
 

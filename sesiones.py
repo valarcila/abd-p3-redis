@@ -16,18 +16,15 @@ import secrets
 DURACION_SESION = 30 * 24 * 60 * 60
 SIN_ACCESO = -1
 
-PREFIJO_USUARIO = 'envivo:usuario'
-PREFIJO_SESION = 'envivo:sesion'
-
 
 def clave_usuario(usuario: str) -> str:
     """Formato: envivo:usuario:<usuario>"""
-    return f"{PREFIJO_USUARIO}:{usuario}"
+    return f"envivo:usuario:{usuario}"
 
 
 def clave_sesion(token: str) -> str:
     """Formato: envivo:sesion:<token>"""
-    return f"{PREFIJO_SESION}:{token}"
+    return f"envivo:sesion:{token}"
 
 
 # ── Gestión de usuarios (CRUD) ──────────────────────────────────────────────

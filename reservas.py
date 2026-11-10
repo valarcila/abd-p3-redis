@@ -9,12 +9,11 @@ Las firmas y los valores de retorno **no deben cambiarse**.
 import redis
 
 SEGUNDOS_POR_DEFECTO = 300
-PREFIJO_ASIENTO = 'envivo:asiento'
 
 
 def clave(evento_id, asiento) -> str:
     """Clave de Redis. Formato: envivo:asiento:<evento>:<asiento>"""
-    return f"{PREFIJO_ASIENTO}:{evento_id}:{asiento}"
+    return f"envivo:asiento:{evento_id}:{asiento}"
 
 
 def reservar(r: redis.Redis, evento_id, asiento, usuario_id,
