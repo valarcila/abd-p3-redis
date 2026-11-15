@@ -140,6 +140,9 @@ def login_por_token(r: redis.Redis, token: str) -> int:
 
     if data is None: return SIN_ACCESO
 
+    if data.get('token') != token:
+        return SIN_ACCESO
+
     return data['privilegios']
 
 
