@@ -59,6 +59,12 @@ def obtener_usuario(r: redis.Redis, usuario: str) -> dict | None:
 
     data['privilegios'] = int(data['privilegios'])
 
+    token = data.get('token')
+
+    # Comprobar si el token sigue siendo válido
+    if token and not r.exists(clave_sesion(token)):
+        data.pop('token')
+
     return data
 
 
